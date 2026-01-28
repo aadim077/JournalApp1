@@ -121,13 +121,20 @@
 
         try
         {
-            var fileName = $"Journal_Export_{DateTime.Now:yyyyMMdd}.pdf";
-            var result = await ExportService.ExportToFileAsync(
+            var fileName = $"Journal_Export_{DateTime.Now:yyyyMMdd_HHmm}.pdf";
+            var documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            var fullPath = Path.Combine(documentsPath, fileName);
+
+            var result = await ExportService.ExportToPdfAsync(
                 _dateRange.Start ?? DateTime.Today.AddDays(-30), 
                 _dateRange.End ?? DateTime.Today,
-                fileName);
+                fullPath);
 
-            if (result.Success) Snackbar.Add($"Exported to {fileName}", Severity.Success);
+            if (result.Success) 
+            {
+                Snackbar.Add($"Exported successfully!", Severity.Success);
+                Snackbar.Add($"Saved to: {fullPath}", Severity.Info, config => { config.HideTransitionDuration = 5000; });
+            }
             else Snackbar.Add(result.Message, Severity.Error);
         }
         catch (Exception ex)

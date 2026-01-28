@@ -1,7 +1,7 @@
 namespace JournalApp.Core.Entities;
 
 
-/// Represents a category for organizing journal entries.
+//Represents a category for organizing journal entries.
 
 public class Category
 {

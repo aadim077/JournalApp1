@@ -15,7 +15,7 @@ public class JournalEntry
     
     public string Title { get; set; } = string.Empty;
     
-    public string Content { get; set; } = string.Empty; // Rich text (HTML from Quill)
+    public string Content { get; set; } = string.Empty; // Rich text 
     
     public MoodCategory PrimaryMood { get; set; } // The primary mood category (Positive, Neutral, Negative)
     

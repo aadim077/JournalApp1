@@ -22,9 +22,9 @@ public class Mood
     
     public MoodCategory Category { get; set; }
     
-    public string Color { get; set; } = string.Empty; // Hex color for UI display
+    public string Color { get; set; } = string.Empty; 
     
-    public string Icon { get; set; } = string.Empty; // Icon identifier
+    public string Icon { get; set; } = string.Empty; 
     
     // Navigation properties
     public ICollection<EntryMood> EntryMoods { get; set; } = new List<EntryMood>();

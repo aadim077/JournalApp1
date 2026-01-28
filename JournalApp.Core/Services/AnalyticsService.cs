@@ -17,6 +17,7 @@ public partial class AnalyticsService
     private readonly IRepository<Mood> _moodRepository;
     private readonly IRepository<Tag> _tagRepository;
     private readonly AuthService _authService;
+    private readonly StreakService _streakService;
 
     public AnalyticsService(
         IRepository<JournalEntry> entryRepository,
@@ -24,7 +25,8 @@ public partial class AnalyticsService
         IRepository<EntryTag> entryTagRepository,
         IRepository<Mood> moodRepository,
         IRepository<Tag> tagRepository,
-        AuthService authService)
+        AuthService authService,
+        StreakService streakService)
     {
         _entryRepository = entryRepository;
         _entryMoodRepository = entryMoodRepository;
@@ -32,10 +34,11 @@ public partial class AnalyticsService
         _moodRepository = moodRepository;
         _tagRepository = tagRepository;
         _authService = authService;
+        _streakService = streakService;
     }
 
    
-    // Gets mood distribution (percentage of positive, neutral, negative moods).
+    // Gets mood distribution 
    
     public async Task<Dictionary<MoodCategory, double>> GetMoodDistributionAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
@@ -244,6 +247,14 @@ public partial class AnalyticsService
 
         var moodInfo = await GetMostFrequentMoodAsync(startDate, endDate);
         stats.MostFrequentMood = moodInfo.Mood?.Name;
+
+        // Populate streak info
+        var streak = await _streakService.GetStreakAsync(userId);
+        if (streak != null)
+        {
+            stats.CurrentStreak = streak.CurrentStreak;
+            stats.LongestStreak = streak.LongestStreak;
+        }
 
         return stats;
     }
