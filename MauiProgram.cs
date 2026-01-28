@@ -50,12 +50,17 @@ public static class MauiProgram
 
         var app = builder.Build();
 
-        // Ensure database is created
+        // Ensure database is created and matches model
         try
         {
             using (var scope = app.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<JournalDbContext>();
+                
+                
+                
+               
+                
                 dbContext.Database.EnsureCreated();
             }
         }

@@ -5,7 +5,6 @@
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
-@using Markdig
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudPaper Class="pa-6">
@@ -21,41 +20,32 @@
             </MudItem>
             
             <MudItem xs="12">
-                <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContents="true" PanelClass="pa-6">
-                    <MudTabPanel Text="Write (Markdown)">
-                        <MudTextField T="string" Label="Content" @bind-Value="_content" Lines="15" Variant="Variant.Outlined" />
-                    </MudTabPanel>
-                    <MudTabPanel Text="Preview">
-                        <MudPaper Outlined="true" Class="pa-4" Style="height: 400px; overflow-y: auto;">
-                            @((MarkupString)Markdown.ToHtml(_content ?? ""))
-                        </MudPaper>
-                    </MudTabPanel>
-                </MudTabs>
+                <MudText Typo="Typo.h6" Class="mb-2">Content</MudText>
+                <MudPaper Outlined="true" Class="pa-0">
+                    <QuillEditor @bind-Content="_content" />
+                </MudPaper>
             </MudItem>
 
             <MudItem xs="12" sm="4">
-                <MudSelect T="int" Label="Primary Mood" @bind-Value="_primaryMoodId" Required="true">
-                    <MudListSubheader>Positive</MudListSubheader>
-                    @foreach (var mood in _moods.Where(m => m.Category == MoodCategory.Positive))
+                <MudSelect T="MoodCategory" Label="Primary Mood" Value="_primaryMood" ValueChanged="OnPrimaryMoodChanged" Required="true" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem Value="MoodCategory.Positive">😊 Positive</MudSelectItem>
+                    <MudSelectItem Value="MoodCategory.Neutral">😐 Neutral</MudSelectItem>
+                    <MudSelectItem Value="MoodCategory.Negative">☹️ Negative</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" sm="4">
+                <MudSelect T="int" Label="Primary Sub-Mood" @bind-Value="_primaryMoodId" Required="true">
+                    @foreach (var mood in _moods.Where(m => m.Category == _primaryMood))
                     {
-                        <MudSelectItem Value="@mood.Id">😊 @mood.Name</MudSelectItem>
-                    }
-                    <MudListSubheader>Neutral</MudListSubheader>
-                    @foreach (var mood in _moods.Where(m => m.Category == MoodCategory.Neutral))
-                    {
-                        <MudSelectItem Value="@mood.Id">😐 @mood.Name</MudSelectItem>
-                    }
-                    <MudListSubheader>Negative</MudListSubheader>
-                    @foreach (var mood in _moods.Where(m => m.Category == MoodCategory.Negative))
-                    {
-                        <MudSelectItem Value="@mood.Id">☹️ @mood.Name</MudSelectItem>
+                        <MudSelectItem Value="@mood.Id">@mood.Name</MudSelectItem>
                     }
                 </MudSelect>
             </MudItem>
 
-            <MudItem xs="12" sm="8">
+            <MudItem xs="12" sm="4">
                 <MudSelect T="int" Label="Secondary Moods (Max 2)" MultiSelection="true" @bind-SelectedValues="_secondaryMoodIds">
-                    @foreach (var mood in _moods)
+                    @foreach (var mood in _moods.Where(m => m.Category == _primaryMood && m.Id != _primaryMoodId))
                     {
                         <MudSelectItem Value="@mood.Id">@mood.Name</MudSelectItem>
                     }
@@ -95,7 +85,14 @@
     private DateTime? _date = DateTime.Today;
     private string _title = "";
     private string _content = "";
+    private MoodCategory _primaryMood = MoodCategory.Positive;
     private int _primaryMoodId;
+
+    private void OnPrimaryMoodChanged(MoodCategory category)
+    {
+        _primaryMood = category;
+        _primaryMoodId = 0;
+    }
     private IEnumerable<int> _secondaryMoodIds = new List<int>();
     private int? _categoryId;
     private IEnumerable<int> _tagIds = new List<int>();
@@ -119,9 +116,18 @@
 
         if (EntryId.HasValue)
         {
-            var result = await JournalService.GetEntryByDateAsync(_date ?? DateTime.Today); // Simplified lookup for demo
-            // In a real app, we'd fetch the entry by ID and include its moods and tags
-            // For now, let's assume we fetch the full entry
+            var result = await JournalService.GetAllEntriesAsync();
+            var entry = result.FirstOrDefault(e => e.Id == EntryId.Value);
+            if (entry != null)
+            {
+                _date = entry.Date;
+                _title = entry.Title;
+                _content = entry.Content;
+                _primaryMood = entry.PrimaryMood;
+                _categoryId = entry.CategoryId;
+                
+                // Note: Loading moods/tags would require more service methods in a real app
+            }
         }
     }
 
@@ -136,7 +142,7 @@
         if (EntryId.HasValue)
         {
             var result = await JournalService.UpdateEntryAsync(
-                EntryId.Value, _title, _content, _categoryId, _primaryMoodId, 
+                EntryId.Value, _title, _content, _categoryId, _primaryMood, _primaryMoodId, 
                 _secondaryMoodIds.ToList(), _tagIds.ToList());
             
             if (result.Success)
@@ -149,7 +155,7 @@
         else
         {
             var result = await JournalService.CreateEntryAsync(
-                _date ?? DateTime.Today, _title, _content, _categoryId, _primaryMoodId, 
+                _date ?? DateTime.Today, _title, _content, _categoryId, _primaryMood, _primaryMoodId, 
                 _secondaryMoodIds.ToList(), _tagIds.ToList());
 
             if (result.Success)

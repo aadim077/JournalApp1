@@ -40,6 +40,7 @@ public class JournalService
         string title,
         string content,
         int? categoryId,
+        MoodCategory primaryMood,
         int primaryMoodId,
         List<int>? secondaryMoodIds,
         List<int>? tagIds)
@@ -70,6 +71,7 @@ public class JournalService
                 Title = title,
                 Content = content,
                 CategoryId = categoryId,
+                PrimaryMood = primaryMood,
                 WordCount = wordCount,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -79,13 +81,13 @@ public class JournalService
             await _entryRepository.SaveChangesAsync();
 
             // Add primary mood
-            var primaryMood = new EntryMood
+            var primaryEntryMood = new EntryMood
             {
                 JournalEntryId = entry.Id,
                 MoodId = primaryMoodId,
                 IsPrimary = true
             };
-            await _entryMoodRepository.AddAsync(primaryMood);
+            await _entryMoodRepository.AddAsync(primaryEntryMood);
 
             // Add secondary moods (max 2)
             if (secondaryMoodIds != null && secondaryMoodIds.Any())
@@ -137,6 +139,7 @@ public class JournalService
         string title,
         string content,
         int? categoryId,
+        MoodCategory primaryMood,
         int primaryMoodId,
         List<int>? secondaryMoodIds,
         List<int>? tagIds)
@@ -157,6 +160,7 @@ public class JournalService
             entry.Title = title;
             entry.Content = content;
             entry.CategoryId = categoryId;
+            entry.PrimaryMood = primaryMood;
             entry.WordCount = CalculateWordCount(content);
             entry.UpdatedAt = DateTime.UtcNow;
 
@@ -170,13 +174,13 @@ public class JournalService
             }
 
             // Add primary mood
-            var primaryMood = new EntryMood
+            var primaryEntryMood = new EntryMood
             {
                 JournalEntryId = entryId,
                 MoodId = primaryMoodId,
                 IsPrimary = true
             };
-            await _entryMoodRepository.AddAsync(primaryMood);
+            await _entryMoodRepository.AddAsync(primaryEntryMood);
 
             // Add secondary moods
             if (secondaryMoodIds != null && secondaryMoodIds.Any())

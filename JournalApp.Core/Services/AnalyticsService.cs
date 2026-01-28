@@ -48,13 +48,6 @@ public partial class AnalyticsService
         if (!entryIds.Any())
             return new Dictionary<MoodCategory, double>();
 
-        // Get all primary moods for these entries
-        var entryMoods = (await _entryMoodRepository.FindAsync(
-            em => entryIds.Contains(em.JournalEntryId) && em.IsPrimary))
-            .ToList();
-
-        var allMoods = (await _moodRepository.GetAllAsync()).ToList();
-
         var moodCounts = new Dictionary<MoodCategory, int>
         {
             { MoodCategory.Positive, 0 },
@@ -62,13 +55,9 @@ public partial class AnalyticsService
             { MoodCategory.Negative, 0 }
         };
 
-        foreach (var entryMood in entryMoods)
+        foreach (var entry in entries)
         {
-            var mood = allMoods.FirstOrDefault(m => m.Id == entryMood.MoodId);
-            if (mood != null)
-            {
-                moodCounts[mood.Category]++;
-            }
+            moodCounts[entry.PrimaryMood]++;
         }
 
         var total = moodCounts.Values.Sum();
