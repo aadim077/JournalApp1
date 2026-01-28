@@ -1,0 +1,138 @@
+@page "/search"
+@inject SearchService SearchService
+@inject TagService TagService
+@inject ExportService ExportService
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-6 mb-6">
+        <MudText Typo="Typo.h5" GutterBottom="true">Search & Filter</MudText>
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="_searchQuery" Label="Search Title or Content" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" OnClearClick="ClearSearch" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudDateRangePicker Label="Date Range" @bind-DateRange="_dateRange" />
+            </MudItem>
+            <MudItem xs="12" md="4" Class="d-flex align-end gap-2">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="PerformSearch" FullWidth="true">Search</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ExportPdf" FullWidth="true">Export PDF</MudButton>
+            </MudItem>
+            
+            <MudItem xs="12" sm="6" md="4">
+                 <MudSelect T="int" Label="Filter by Mood" MultiSelection="true" @bind-SelectedValues="_selectedMoodIds">
+                    @foreach (var mood in _moods)
+                    {
+                        <MudSelectItem Value="@mood.Id">@mood.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <MudSelect T="int" Label="Filter by Tags" MultiSelection="true" @bind-SelectedValues="_selectedTagIds">
+                    @foreach (var tag in _tags)
+                    {
+                        <MudSelectItem Value="@tag.Id">@tag.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudGrid>
+        @if (_results != null && _results.Any())
+        {
+            @foreach (var entry in _results)
+            {
+                <MudItem xs="12" md="6">
+                    <MudCard Elevation="2">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@entry.Title</MudText>
+                                <MudText Typo="Typo.caption">@entry.Date.ToShortDateString()</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText Typo="Typo.body2" Class="text-truncate">@entry.Content</MudText>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo($"/editor/{entry.Id}"))">View/Edit</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        }
+        else if (_hasSearched)
+        {
+            <MudItem xs="12">
+                <MudAlert Severity="Severity.Info">No matches found for your criteria.</MudAlert>
+            </MudItem>
+        }
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private string _searchQuery = "";
+    private DateRange _dateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
+    private IEnumerable<int> _selectedMoodIds = new List<int>();
+    private IEnumerable<int> _selectedTagIds = new List<int>();
+    
+    private List<JournalEntry> _results = new();
+    private List<Mood> _moods = new();
+    private List<Tag> _tags = new();
+    private bool _hasSearched = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.CurrentUser == null)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        _moods = (await TagService.GetMoodsAsync()).ToList();
+        _tags = (await TagService.GetPrebuiltTagsAsync()).ToList();
+    }
+
+    private async Task PerformSearch()
+    {
+        _results = (await SearchService.AdvancedSearchAsync(
+            _searchQuery,
+            _dateRange.Start,
+            _dateRange.End,
+            _selectedMoodIds.ToList(),
+            _selectedTagIds.ToList()
+        )).ToList();
+        
+        _hasSearched = true;
+    }
+
+    private void ClearSearch()
+    {
+        _searchQuery = "";
+        _results.Clear();
+        _hasSearched = false;
+    }
+
+    private async Task ExportPdf()
+    {
+        if (AuthService.CurrentUser == null) return;
+
+        try
+        {
+            var fileName = $"Journal_Export_{DateTime.Now:yyyyMMdd}.pdf";
+            var result = await ExportService.ExportToFileAsync(
+                _dateRange.Start ?? DateTime.Today.AddDays(-30), 
+                _dateRange.End ?? DateTime.Today,
+                fileName);
+
+            if (result.Success) Snackbar.Add($"Exported to {fileName}", Severity.Success);
+            else Snackbar.Add(result.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Export error: {ex.Message}", Severity.Error);
+        }
+    }
+}

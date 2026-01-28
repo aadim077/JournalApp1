@@ -3,9 +3,9 @@ using JournalApp.Core.Interfaces;
 
 namespace JournalApp.Core.Services;
 
-/// <summary>
-/// Service for managing and calculating user streaks.
-/// </summary>
+
+// Service for managing and calculating user streaks.
+
 public class StreakService
 {
     private readonly IRepository<Streak> _streakRepository;
@@ -17,9 +17,10 @@ public class StreakService
         _entryRepository = entryRepository;
     }
 
-    /// <summary>
-    /// Updates the streak after a new entry is created.
-    /// </summary>
+   
+
+    // Updates the streak after a new entry is created.
+    
     public async Task UpdateStreakAsync(int userId, DateTime entryDate)
     {
         var streaks = await _streakRepository.FindAsync(s => s.UserId == userId);
@@ -75,9 +76,9 @@ public class StreakService
         await _streakRepository.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Recalculates the streak from scratch (used after deletion).
-    /// </summary>
+   
+    // Recalculates the streak from scratch 
+   
     public async Task RecalculateStreakAsync(int userId)
     {
         var entries = (await _entryRepository.FindAsync(e => e.UserId == userId))
@@ -144,18 +145,18 @@ public class StreakService
         await _streakRepository.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Gets the streak for a user.
-    /// </summary>
+    
+    // Gets the streak for a user.
+   
     public async Task<Streak?> GetStreakAsync(int userId)
     {
         var streaks = await _streakRepository.FindAsync(s => s.UserId == userId);
         return streaks.FirstOrDefault();
     }
 
-    /// <summary>
-    /// Gets missed days (dates without entries) in a date range.
-    /// </summary>
+    
+    // Gets missed days (dates without entries) in a date range.
+    
     public async Task<List<DateTime>> GetMissedDaysAsync(int userId, DateTime startDate, DateTime endDate)
     {
         var entries = await _entryRepository.FindAsync(

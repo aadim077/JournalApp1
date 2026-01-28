@@ -1,9 +1,9 @@
 namespace JournalApp.Core.Entities;
 
-/// <summary>
-/// Represents a tag that can be applied to journal entries.
-/// Supports both pre-built and custom user-created tags.
-/// </summary>
+
+// Represents a tag that can be applied to journal entries.
+// Supports both pre-built and custom user-created tags.
+
 public class Tag
 {
     public int Id { get; set; }

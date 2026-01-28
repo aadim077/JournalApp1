@@ -1,0 +1,74 @@
+@page "/calendar"
+@inject JournalService JournalService
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-6">
+        <MudText Typo="Typo.h5" GutterBottom="true">Calendar Navigation</MudText>
+        <MudGrid Justify="Justify.Center">
+            <MudItem xs="12" md="8">
+                <MudDatePicker PickerVariant="PickerVariant.Static" Date="@_selectedDate" DateChanged="OnDateSelected" Color="Color.Primary" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudPaper Outlined="true" Class="pa-4" Style="height: 100%;">
+                    <MudText Typo="Typo.h6">Entry for @_selectedDate?.ToShortDateString()</MudText>
+                    <MudDivider Class="my-2" />
+                    @if (_selectedEntry != null)
+                    {
+                        <MudText Typo="Typo.subtitle1"><b>@_selectedEntry.Title</b></MudText>
+                        <MudText Typo="Typo.body2" Class="mt-2">@_selectedEntry.Content</MudText>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" Class="mt-4" OnClick="EditSelected">Edit Full Entry</MudButton>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Class="mt-4" Color="Color.Surface">No entry for this date.</MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="CreateForDate">Create New</MudButton>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private DateTime? _selectedDate = DateTime.Today;
+    private JournalEntry? _selectedEntry;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.CurrentUser == null)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        await LoadEntryForDate(_selectedDate ?? DateTime.Today);
+    }
+
+    private async Task OnDateSelected(DateTime? date)
+    {
+        _selectedDate = date;
+        if (date.HasValue)
+        {
+            await LoadEntryForDate(date.Value);
+        }
+    }
+
+    private async Task LoadEntryForDate(DateTime date)
+    {
+        _selectedEntry = await JournalService.GetEntryByDateAsync(date);
+    }
+
+    private void EditSelected()
+    {
+        if (_selectedEntry != null)
+            NavigationManager.NavigateTo($"/editor/{_selectedEntry.Id}");
+    }
+
+    private void CreateForDate()
+    {
+        // Pass date in query string or state
+        NavigationManager.NavigateTo($"/editor");
+    }
+}

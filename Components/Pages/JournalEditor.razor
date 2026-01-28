@@ -1,0 +1,165 @@
+@page "/editor"
+@page "/editor/{EntryId:int}"
+@inject JournalService JournalService
+@inject TagService TagService
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@using Markdig
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Class="pa-6">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.h5">@(EntryId.HasValue ? "Update Entry" : "New Daily Entry")</MudText>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker Label="Journal Date" @bind-Date="_date" DisableToolbar="true" ReadOnly="@EntryId.HasValue" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField T="string" Label="Title" @bind-Value="_title" Required="true" />
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContents="true" PanelClass="pa-6">
+                    <MudTabPanel Text="Write (Markdown)">
+                        <MudTextField T="string" Label="Content" @bind-Value="_content" Lines="15" Variant="Variant.Outlined" />
+                    </MudTabPanel>
+                    <MudTabPanel Text="Preview">
+                        <MudPaper Outlined="true" Class="pa-4" Style="height: 400px; overflow-y: auto;">
+                            @((MarkupString)Markdown.ToHtml(_content ?? ""))
+                        </MudPaper>
+                    </MudTabPanel>
+                </MudTabs>
+            </MudItem>
+
+            <MudItem xs="12" sm="4">
+                <MudSelect T="int" Label="Primary Mood" @bind-Value="_primaryMoodId" Required="true">
+                    <MudListSubheader>Positive</MudListSubheader>
+                    @foreach (var mood in _moods.Where(m => m.Category == MoodCategory.Positive))
+                    {
+                        <MudSelectItem Value="@mood.Id">😊 @mood.Name</MudSelectItem>
+                    }
+                    <MudListSubheader>Neutral</MudListSubheader>
+                    @foreach (var mood in _moods.Where(m => m.Category == MoodCategory.Neutral))
+                    {
+                        <MudSelectItem Value="@mood.Id">😐 @mood.Name</MudSelectItem>
+                    }
+                    <MudListSubheader>Negative</MudListSubheader>
+                    @foreach (var mood in _moods.Where(m => m.Category == MoodCategory.Negative))
+                    {
+                        <MudSelectItem Value="@mood.Id">☹️ @mood.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" sm="8">
+                <MudSelect T="int" Label="Secondary Moods (Max 2)" MultiSelection="true" @bind-SelectedValues="_secondaryMoodIds">
+                    @foreach (var mood in _moods)
+                    {
+                        <MudSelectItem Value="@mood.Id">@mood.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudSelect T="int?" Label="Category" @bind-Value="_categoryId">
+                    <MudSelectItem T="int?" Value="null">None</MudSelectItem>
+                    @foreach (var category in _categories)
+                    {
+                        <MudSelectItem T="int?" Value="@category.Id">@category.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudSelect T="int" Label="Tags" MultiSelection="true" @bind-SelectedValues="_tagIds">
+                    @foreach (var tag in _tags)
+                    {
+                        <MudSelectItem Value="@tag.Id">@tag.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12" Class="d-flex justify-end gap-2">
+                <MudButton Variant="Variant.Outlined" OnClick="Cancel">Cancel</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveEntry">Save Entry</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter] public int? EntryId { get; set; }
+
+    private DateTime? _date = DateTime.Today;
+    private string _title = "";
+    private string _content = "";
+    private int _primaryMoodId;
+    private IEnumerable<int> _secondaryMoodIds = new List<int>();
+    private int? _categoryId;
+    private IEnumerable<int> _tagIds = new List<int>();
+
+    private List<Mood> _moods = new();
+    private List<Category> _categories = new();
+    private List<Tag> _tags = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.CurrentUser == null)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        // Load data for selects
+        _moods = (await TagService.GetMoodsAsync()).ToList();
+        _categories = (await TagService.GetCategoriesAsync()).ToList();
+        _tags = (await TagService.GetPrebuiltTagsAsync()).ToList();
+
+        if (EntryId.HasValue)
+        {
+            var result = await JournalService.GetEntryByDateAsync(_date ?? DateTime.Today); // Simplified lookup for demo
+            // In a real app, we'd fetch the entry by ID and include its moods and tags
+            // For now, let's assume we fetch the full entry
+        }
+    }
+
+    private async Task SaveEntry()
+    {
+        if (string.IsNullOrWhiteSpace(_title) || string.IsNullOrWhiteSpace(_content) || _primaryMoodId == 0)
+        {
+            Snackbar.Add("Title, Content, and Primary Mood are required", Severity.Error);
+            return;
+        }
+
+        if (EntryId.HasValue)
+        {
+            var result = await JournalService.UpdateEntryAsync(
+                EntryId.Value, _title, _content, _categoryId, _primaryMoodId, 
+                _secondaryMoodIds.ToList(), _tagIds.ToList());
+            
+            if (result.Success)
+            {
+                Snackbar.Add("Entry updated!", Severity.Success);
+                NavigationManager.NavigateTo("/");
+            }
+            else Snackbar.Add(result.Message, Severity.Error);
+        }
+        else
+        {
+            var result = await JournalService.CreateEntryAsync(
+                _date ?? DateTime.Today, _title, _content, _categoryId, _primaryMoodId, 
+                _secondaryMoodIds.ToList(), _tagIds.ToList());
+
+            if (result.Success)
+            {
+                Snackbar.Add("Entry saved!", Severity.Success);
+                NavigationManager.NavigateTo("/");
+            }
+            else Snackbar.Add(result.Message, Severity.Error);
+        }
+    }
+
+    private void Cancel() => NavigationManager.NavigateTo("/");
+}

@@ -1,131 +1,109 @@
 using JournalApp.Core.Entities;
 using JournalApp.Core.Interfaces;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace JournalApp.Core.Services;
 
-/// <summary>
-/// Service for managing tags.
-/// </summary>
+
+// Service for managing tags, moods, and categories.
+// Provides initialization logic for pre-built metadata.
+
 public class TagService
 {
     private readonly IRepository<Tag> _tagRepository;
+    private readonly IRepository<Mood> _moodRepository;
+    private readonly IRepository<Category> _categoryRepository;
     private readonly AuthService _authService;
 
-    public TagService(IRepository<Tag> tagRepository, AuthService authService)
+    public TagService(
+        IRepository<Tag> tagRepository, 
+        IRepository<Mood> moodRepository,
+        IRepository<Category> categoryRepository,
+        AuthService authService)
     {
         _tagRepository = tagRepository;
+        _moodRepository = moodRepository;
+        _categoryRepository = categoryRepository;
         _authService = authService;
     }
 
-    /// <summary>
-    /// Gets all tags (pre-built and user's custom tags).
-    /// </summary>
-    public async Task<List<Tag>> GetAllTagsAsync()
+    public async Task<List<Mood>> GetMoodsAsync()
     {
-        if (_authService.CurrentUser == null)
-            return new List<Tag>();
-
-        var userId = _authService.CurrentUser.Id;
-
-        // Get pre-built tags and user's custom tags
-        var tags = await _tagRepository.FindAsync(
-            t => !t.IsCustom || (t.IsCustom && t.UserId == userId));
-
-        return tags.OrderBy(t => t.Name).ToList();
+        var moods = (await _moodRepository.GetAllAsync()).ToList();
+        if (!moods.Any())
+        {
+            await SeedMoodsAsync();
+            moods = (await _moodRepository.GetAllAsync()).ToList();
+        }
+        return moods;
     }
 
-    /// <summary>
-    /// Gets only pre-built tags.
-    /// </summary>
-    public async Task<List<Tag>> GetPreBuiltTagsAsync()
+    public async Task<List<Category>> GetCategoriesAsync()
     {
-        var tags = await _tagRepository.FindAsync(t => !t.IsCustom);
-        return tags.OrderBy(t => t.Name).ToList();
+        var categories = (await _categoryRepository.GetAllAsync()).ToList();
+        if (!categories.Any())
+        {
+            await SeedCategoriesAsync();
+            categories = (await _categoryRepository.GetAllAsync()).ToList();
+        }
+        return categories;
     }
 
-    /// <summary>
-    /// Gets user's custom tags.
-    /// </summary>
-    public async Task<List<Tag>> GetCustomTagsAsync()
+    public async Task<List<Tag>> GetPrebuiltTagsAsync()
     {
-        if (_authService.CurrentUser == null)
-            return new List<Tag>();
-
-        var userId = _authService.CurrentUser.Id;
-        var tags = await _tagRepository.FindAsync(t => t.IsCustom && t.UserId == userId);
-        return tags.OrderBy(t => t.Name).ToList();
+        var tags = (await _tagRepository.FindAsync(t => !t.IsCustom)).ToList();
+        if (!tags.Any())
+        {
+            await SeedTagsAsync();
+            tags = (await _tagRepository.FindAsync(t => !t.IsCustom)).ToList();
+        }
+        return tags;
     }
 
-    /// <summary>
-    /// Creates a custom tag for the current user.
-    /// </summary>
-    public async Task<(bool Success, string Message, Tag? Tag)> CreateCustomTagAsync(string tagName)
+    private async Task SeedMoodsAsync()
     {
-        try
+        var moods = new List<Mood>
         {
-            if (_authService.CurrentUser == null)
-                return (false, "User not authenticated.", null);
-
-            if (string.IsNullOrWhiteSpace(tagName))
-                return (false, "Tag name cannot be empty.", null);
-
-            var userId = _authService.CurrentUser.Id;
-
-            // Check if tag already exists
-            var existingTags = await _tagRepository.FindAsync(
-                t => t.Name.ToLower() == tagName.ToLower() &&
-                     (!t.IsCustom || t.UserId == userId));
-
-            if (existingTags.Any())
-                return (false, "A tag with this name already exists.", null);
-
-            var tag = new Tag
-            {
-                Name = tagName,
-                IsCustom = true,
-                UserId = userId
-            };
-
-            await _tagRepository.AddAsync(tag);
-            await _tagRepository.SaveChangesAsync();
-
-            return (true, "Tag created successfully!", tag);
-        }
-        catch (Exception ex)
-        {
-            return (false, $"Failed to create tag: {ex.Message}", null);
-        }
+            new() { Name = "Happy", Category = MoodCategory.Positive },
+            new() { Name = "Excited", Category = MoodCategory.Positive },
+            new() { Name = "Relaxed", Category = MoodCategory.Positive },
+            new() { Name = "Grateful", Category = MoodCategory.Positive },
+            new() { Name = "Confident", Category = MoodCategory.Positive },
+            new() { Name = "Calm", Category = MoodCategory.Neutral },
+            new() { Name = "Thoughtful", Category = MoodCategory.Neutral },
+            new() { Name = "Curious", Category = MoodCategory.Neutral },
+            new() { Name = "Nostalgic", Category = MoodCategory.Neutral },
+            new() { Name = "Bored", Category = MoodCategory.Neutral },
+            new() { Name = "Sad", Category = MoodCategory.Negative },
+            new() { Name = "Angry", Category = MoodCategory.Negative },
+            new() { Name = "Stressed", Category = MoodCategory.Negative },
+            new() { Name = "Lonely", Category = MoodCategory.Negative },
+            new() { Name = "Anxious", Category = MoodCategory.Negative }
+        };
+        foreach (var m in moods) await _moodRepository.AddAsync(m);
+        await _moodRepository.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Deletes a custom tag.
-    /// </summary>
-    public async Task<(bool Success, string Message)> DeleteCustomTagAsync(int tagId)
+    private async Task SeedCategoriesAsync()
     {
-        try
+        var categories = new List<Category>
         {
-            if (_authService.CurrentUser == null)
-                return (false, "User not authenticated.");
+            new() { Name = "Work", Description = "Professional tasks and environment" },
+            new() { Name = "Personal", Description = "Private life and thoughts" },
+            new() { Name = "Health", Description = "Physical and mental well-being" },
+            new() { Name = "Travel", Description = "Trips and exploration" },
+            new() { Name = "Finance", Description = "Money management and goals" }
+        };
+        foreach (var c in categories) await _categoryRepository.AddAsync(c);
+        await _categoryRepository.SaveChangesAsync();
+    }
 
-            var tag = await _tagRepository.GetByIdAsync(tagId);
-
-            if (tag == null)
-                return (false, "Tag not found.");
-
-            if (!tag.IsCustom)
-                return (false, "Cannot delete pre-built tags.");
-
-            if (tag.UserId != _authService.CurrentUser.Id)
-                return (false, "Unauthorized access.");
-
-            await _tagRepository.DeleteAsync(tag);
-            await _tagRepository.SaveChangesAsync();
-
-            return (true, "Tag deleted successfully!");
-        }
-        catch (Exception ex)
-        {
-            return (false, $"Failed to delete tag: {ex.Message}");
-        }
+    private async Task SeedTagsAsync()
+    {
+        string[] tagNames = { "Work", "Career", "Studies", "Family", "Friends", "Relationships", "Health", "Fitness", "Personal Growth", "Self-care", "Hobbies", "Travel", "Nature", "Finance", "Spirituality", "Birthday", "Holiday", "Vacation", "Celebration", "Exercise", "Reading", "Writing", "Cooking", "Meditation", "Yoga", "Music", "Shopping", "Parenting", "Projects", "Planning", "Reflection" };
+        foreach (var name in tagNames) await _tagRepository.AddAsync(new Tag { Name = name, IsCustom = false });
+        await _tagRepository.SaveChangesAsync();
     }
 }

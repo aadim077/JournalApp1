@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JournalApp.Data.Context;
 
-/// <summary>
-/// Database context for the Journal application.
-/// Manages all entity sets and database configuration.
-/// </summary>
+
+// Database context for the Journal application.
+// Manages all entity sets and database configuration.
+
 public class JournalDbContext : DbContext
 {
     public JournalDbContext(DbContextOptions<JournalDbContext> options) : base(options)

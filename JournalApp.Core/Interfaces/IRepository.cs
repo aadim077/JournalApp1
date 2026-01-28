@@ -2,9 +2,8 @@ using System.Linq.Expressions;
 
 namespace JournalApp.Core.Interfaces;
 
-/// <summary>
-/// Generic repository interface for common CRUD operations.
-/// </summary>
+// Generic repository interface for common CRUD operations.
+
 public interface IRepository<T> where T : class
 {
     Task<T?> GetByIdAsync(int id);

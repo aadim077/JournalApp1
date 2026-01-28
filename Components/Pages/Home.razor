@@ -1,5 +1,120 @@
 ﻿@page "/"
+@inject AnalyticsService AnalyticsService
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
 
-<h1>Hello, world!</h1>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" GutterBottom="true">Dashboard</MudText>
 
-Welcome to your new app.
+    @if (_isLoaded)
+    {
+        <MudGrid>
+            <!-- Streak Stats -->
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4 d-flex flex-column align-center justify-center" Style="height: 150px;">
+                    <MudText Typo="Typo.h6">Current Streak</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Primary">🔥 @_stats.CurrentStreak</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4 d-flex flex-column align-center justify-center" Style="height: 150px;">
+                    <MudText Typo="Typo.h6">Longest Streak</MudText>
+                    <MudText Typo="Typo.h3" Color="Color.Secondary">🏆 @_stats.LongestStreak</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4 d-flex flex-column align-center justify-center" Style="height: 150px;">
+                    <MudText Typo="Typo.h6">Most Frequent Mood</MudText>
+                    <MudText Typo="Typo.h4">@(_stats.MostFrequentMood ?? "N/A")</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4 d-flex flex-column align-center justify-center" Style="height: 150px;">
+                    <MudText Typo="Typo.h6">Total Entries</MudText>
+                    <MudText Typo="Typo.h3">@_stats.TotalEntries</MudText>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Mood Distribution Chart -->
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Mood Distribution</MudText>
+                    <MudChart ChartType="ChartType.Pie" InputData="@_moodDistributionData" InputLabels="@_moodDistributionLabels" Width="300px" Height="300px" />
+                </MudPaper>
+            </MudItem>
+
+            <!-- Word Count Trends -->
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Word Count Trends (Last 7 Entries)</MudText>
+                    <MudChart ChartType="ChartType.Line" ChartSeries="@_wordCountSeries" XAxisLabels="@_wordCountLabels" Width="100%" Height="300px" />
+                </MudPaper>
+            </MudItem>
+
+            <!-- Tag Cloud / Breakdown -->
+            <MudItem xs="12">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Most Used Tags</MudText>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var tag in _stats.MostUsedTags)
+                        {
+                            <MudChip T="string" Color="Color.Info" Variant="Variant.Text">@tag.Key (@tag.Value)</MudChip>
+                        }
+                    </div>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+    else
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+</MudContainer>
+
+@code {
+    private bool _isLoaded = false;
+    private JournalStats _stats = new();
+    
+    private double[] _moodDistributionData = Array.Empty<double>();
+    private string[] _moodDistributionLabels = Array.Empty<string>();
+    
+    private List<ChartSeries> _wordCountSeries = new();
+    private string[] _wordCountLabels = Array.Empty<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.CurrentUser == null)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        try
+        {
+            DateTime end = DateTime.Today;
+            DateTime start = end.AddDays(-30);
+            
+            _stats = await AnalyticsService.GetStatsAsync(AuthService.CurrentUser.Id, start, end);
+            
+            // Prepare Mood Distribution
+            var distribution = _stats.MoodDistribution;
+            _moodDistributionData = distribution.Values.Select(v => (double)v).ToArray();
+            _moodDistributionLabels = distribution.Keys.ToArray();
+
+            // Prepare Word Count Trends
+            var trends = await AnalyticsService.GetWordCountTrendsAsync(AuthService.CurrentUser.Id, 7);
+            _wordCountSeries = new List<ChartSeries>
+            {
+                new ChartSeries { Name = "Words", Data = trends.Values.Select(v => (double)v).ToArray() }
+            };
+            _wordCountLabels = trends.Keys.Select(d => d.ToString("MM/dd")).ToArray();
+
+            _isLoaded = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading dashboard: {ex.Message}", Severity.Error);
+        }
+    }
+}

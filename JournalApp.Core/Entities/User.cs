@@ -1,9 +1,9 @@
 namespace JournalApp.Core.Entities;
 
-/// <summary>
-/// Represents a user in the journal application.
-/// Supports multi-user functionality with password-based authentication.
-/// </summary>
+
+// Represents a user in the journal application.
+// Supports multi-user functionality with password-based authentication.
+
 public class User
 {
     public int Id { get; set; }

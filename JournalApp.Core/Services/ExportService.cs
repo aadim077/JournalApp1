@@ -4,9 +4,9 @@ using System.Text;
 
 namespace JournalApp.Core.Services;
 
-/// <summary>
-/// Service for exporting journal entries.
-/// </summary>
+
+// Service for exporting journal entries.
+
 public class ExportService
 {
     private readonly IRepository<JournalEntry> _entryRepository;
@@ -35,10 +35,10 @@ public class ExportService
         _authService = authService;
     }
 
-    /// <summary>
-    /// Exports journal entries to a text file for a given date range.
-    /// TODO: Implement PDF export using QuestPDF
-    /// </summary>
+   
+    // Exports journal entries to a text file for a given date range.
+    // TODO: Implement PDF export using QuestPDF
+    
     public async Task<(bool Success, string Message, string? FilePath)> ExportToFileAsync(
         DateTime startDate,
         DateTime endDate,

@@ -1,8 +1,8 @@
 namespace JournalApp.Core.Entities;
 
-/// <summary>
-/// Junction table linking journal entries to tags.
-/// </summary>
+
+// Junction table linking journal entries to tags.
+
 public class EntryTag
 {
     public int Id { get; set; }

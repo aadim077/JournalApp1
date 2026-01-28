@@ -1,9 +1,9 @@
 namespace JournalApp.Core.Entities;
 
-/// <summary>
-/// Represents a journal entry. Each user can have only one entry per day.
-/// Supports rich text/Markdown content, mood tracking, and tagging.
-/// </summary>
+
+// Represents a journal entry. Each user can have only one entry per day.
+//Supports rich text, mood tracking, and tagging.
+
 public class JournalEntry
 {
     public int Id { get; set; }
@@ -23,7 +23,7 @@ public class JournalEntry
     
     public int WordCount { get; set; } // Calculated field
     
-    // Category (optional)
+    // Category
     public int? CategoryId { get; set; }
     public Category? Category { get; set; }
     

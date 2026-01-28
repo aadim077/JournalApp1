@@ -1,11 +1,14 @@
 using JournalApp.Core.Entities;
 using JournalApp.Core.Interfaces;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace JournalApp.Core.Services;
 
-/// <summary>
-/// Service for searching and filtering journal entries.
-/// </summary>
+
+// Service for searching and filtering journal entries.
+
 public class SearchService
 {
     private readonly IRepository<JournalEntry> _entryRepository;
@@ -25,9 +28,9 @@ public class SearchService
         _authService = authService;
     }
 
-    /// <summary>
-    /// Searches entries by title or content.
-    /// </summary>
+    
+    // Searches entries by title or content.
+   
     public async Task<List<JournalEntry>> SearchEntriesAsync(string searchTerm)
     {
         if (_authService.CurrentUser == null || string.IsNullOrWhiteSpace(searchTerm))
@@ -44,9 +47,9 @@ public class SearchService
         return entries.OrderByDescending(e => e.Date).ToList();
     }
 
-    /// <summary>
-    /// Filters entries by date range.
-    /// </summary>
+    
+    // Filters entries by date range.
+   
     public async Task<List<JournalEntry>> FilterByDateRangeAsync(DateTime startDate, DateTime endDate)
     {
         if (_authService.CurrentUser == null)
@@ -60,9 +63,9 @@ public class SearchService
         return entries.OrderByDescending(e => e.Date).ToList();
     }
 
-    /// <summary>
-    /// Filters entries by moods.
-    /// </summary>
+    
+    // Filters entries by moods.
+   
     public async Task<List<JournalEntry>> FilterByMoodsAsync(List<int> moodIds)
     {
         if (_authService.CurrentUser == null || !moodIds.Any())
@@ -85,9 +88,9 @@ public class SearchService
         return entries.OrderByDescending(e => e.Date).ToList();
     }
 
-    /// <summary>
-    /// Filters entries by tags.
-    /// </summary>
+    
+    // Filters entries by tags.
+    
     public async Task<List<JournalEntry>> FilterByTagsAsync(List<int> tagIds)
     {
         if (_authService.CurrentUser == null || !tagIds.Any())
@@ -110,9 +113,9 @@ public class SearchService
         return entries.OrderByDescending(e => e.Date).ToList();
     }
 
-    /// <summary>
-    /// Advanced search with multiple filters.
-    /// </summary>
+    
+    // Advanced search with multiple filters.
+   
     public async Task<List<JournalEntry>> AdvancedSearchAsync(
         string? searchTerm = null,
         DateTime? startDate = null,

@@ -1,9 +1,9 @@
 namespace JournalApp.Core.Entities;
 
-/// <summary>
-/// Tracks journaling streaks for a user.
-/// Maintains current streak, longest streak, and last entry date.
-/// </summary>
+
+// Tracks journaling streaks for a user.
+// Maintains current streak, longest streak, and last entry date.
+
 public class Streak
 {
     public int Id { get; set; }

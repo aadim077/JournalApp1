@@ -1,12 +1,15 @@
 using JournalApp.Core.Entities;
 using JournalApp.Core.Interfaces;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace JournalApp.Core.Services;
 
-/// <summary>
-/// Service for analytics and insights on journal data.
-/// </summary>
-public class AnalyticsService
+
+// Service for analytics and insights on journal data.
+
+public partial class AnalyticsService
 {
     private readonly IRepository<JournalEntry> _entryRepository;
     private readonly IRepository<EntryMood> _entryMoodRepository;
@@ -31,9 +34,9 @@ public class AnalyticsService
         _authService = authService;
     }
 
-    /// <summary>
-    /// Gets mood distribution (percentage of positive, neutral, negative moods).
-    /// </summary>
+   
+    // Gets mood distribution (percentage of positive, neutral, negative moods).
+   
     public async Task<Dictionary<MoodCategory, double>> GetMoodDistributionAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
         if (_authService.CurrentUser == null)
@@ -79,9 +82,9 @@ public class AnalyticsService
         return distribution;
     }
 
-    /// <summary>
-    /// Gets the most frequent mood.
-    /// </summary>
+    
+    // Gets the most frequent mood.
+   
     public async Task<(Mood? Mood, int Count)> GetMostFrequentMoodAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
         if (_authService.CurrentUser == null)
@@ -110,9 +113,9 @@ public class AnalyticsService
         return (mood, moodCounts.Count);
     }
 
-    /// <summary>
-    /// Gets the most used tags.
-    /// </summary>
+    
+    // Gets the most used tags.
+   
     public async Task<List<(Tag Tag, int Count)>> GetMostUsedTagsAsync(int topN = 10, DateTime? startDate = null, DateTime? endDate = null)
     {
         if (_authService.CurrentUser == null)
@@ -148,9 +151,9 @@ public class AnalyticsService
         return result;
     }
 
-    /// <summary>
-    /// Gets tag breakdown (percentage of entries per tag).
-    /// </summary>
+    
+    // Gets tag breakdown
+   
     public async Task<Dictionary<string, double>> GetTagBreakdownAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
         if (_authService.CurrentUser == null)
@@ -186,9 +189,23 @@ public class AnalyticsService
         return breakdown;
     }
 
-    /// <summary>
-    /// Gets word count trends over time.
-    /// </summary>
+   
+    // Gets word count trends for the last N entries.
+   
+    public async Task<Dictionary<DateTime, int>> GetWordCountTrendsAsync(int userId, int lastN)
+    {
+        var entries = (await _entryRepository.FindAsync(e => e.UserId == userId))
+            .OrderByDescending(e => e.Date)
+            .Take(lastN)
+            .OrderBy(e => e.Date)
+            .ToList();
+
+        return entries.ToDictionary(e => e.Date, e => e.WordCount);
+    }
+
+    
+    //Gets word count trends over time.
+   
     public async Task<Dictionary<DateTime, double>> GetWordCountTrendsAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
         if (_authService.CurrentUser == null)
@@ -208,9 +225,9 @@ public class AnalyticsService
         return trends;
     }
 
-    /// <summary>
-    /// Gets average word count.
-    /// </summary>
+    
+    // Gets average word count.
+    
     public async Task<double> GetAverageWordCountAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
         if (_authService.CurrentUser == null)
@@ -224,9 +241,27 @@ public class AnalyticsService
         return entries.Average(e => e.WordCount);
     }
 
-    /// <summary>
-    /// Helper method to get entries in a date range.
-    /// </summary>
+   
+    // Gets all statistics for the dashboard.
+  
+    public async Task<JournalStats> GetStatsAsync(int userId, DateTime startDate, DateTime endDate)
+    {
+        var stats = new JournalStats
+        {
+            TotalEntries = (await _entryRepository.FindAsync(e => e.UserId == userId)).Count(),
+            MoodDistribution = (await GetMoodDistributionAsync(startDate, endDate)).ToDictionary(k => k.Key.ToString(), v => v.Value),
+            MostUsedTags = (await GetMostUsedTagsAsync(5, startDate, endDate)).ToDictionary(k => k.Tag.Name, v => v.Count)
+        };
+
+        var moodInfo = await GetMostFrequentMoodAsync(startDate, endDate);
+        stats.MostFrequentMood = moodInfo.Mood?.Name;
+
+        return stats;
+    }
+
+  
+    // Helper method to get entries in a date range.
+   
     private async Task<List<JournalEntry>> GetEntriesInRangeAsync(DateTime? startDate, DateTime? endDate)
     {
         if (_authService.CurrentUser == null)
@@ -258,4 +293,14 @@ public class AnalyticsService
                 .ToList();
         }
     }
+}
+
+public class JournalStats
+{
+    public int TotalEntries { get; set; }
+    public int CurrentStreak { get; set; }
+    public int LongestStreak { get; set; }
+    public string? MostFrequentMood { get; set; }
+    public Dictionary<string, double> MoodDistribution { get; set; } = new();
+    public Dictionary<string, int> MostUsedTags { get; set; } = new();
 }

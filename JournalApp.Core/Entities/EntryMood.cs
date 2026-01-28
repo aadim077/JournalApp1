@@ -1,9 +1,9 @@
 namespace JournalApp.Core.Entities;
 
-/// <summary>
-/// Junction table linking journal entries to moods.
-/// Supports one primary mood and up to two secondary moods per entry.
-/// </summary>
+
+// Junction table linking journal entries to moods.
+// Supports one primary mood and up to two secondary moods per entry.
+
 public class EntryMood
 {
     public int Id { get; set; }

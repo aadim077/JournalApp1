@@ -1,12 +1,15 @@
 using JournalApp.Core.Entities;
 using JournalApp.Core.Interfaces;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace JournalApp.Core.Services;
 
-/// <summary>
-/// Service for managing journal entries.
-/// Handles CRUD operations and enforces one-entry-per-day rule.
-/// </summary>
+
+// Service for managing journal entries.
+// Handles CRUD operations and enforces one-entry-per-day rule.
+
 public class JournalService
 {
     private readonly IRepository<JournalEntry> _entryRepository;
@@ -29,9 +32,9 @@ public class JournalService
         _authService = authService;
     }
 
-    /// <summary>
-    /// Creates a new journal entry for the current user.
-    /// </summary>
+   
+    // Creates a new journal entry for the current user.
+    
     public async Task<(bool Success, string Message, JournalEntry? Entry)> CreateEntryAsync(
         DateTime date,
         string title,
@@ -127,9 +130,8 @@ public class JournalService
         }
     }
 
-    /// <summary>
-    /// Updates an existing journal entry.
-    /// </summary>
+    // Updates an existing journal entry.
+    
     public async Task<(bool Success, string Message)> UpdateEntryAsync(
         int entryId,
         string title,
@@ -222,9 +224,9 @@ public class JournalService
         }
     }
 
-    /// <summary>
-    /// Deletes a journal entry.
-    /// </summary>
+  
+    // Deletes a journal entry.
+    
     public async Task<(bool Success, string Message)> DeleteEntryAsync(int entryId)
     {
         try
@@ -255,9 +257,9 @@ public class JournalService
         }
     }
 
-    /// <summary>
-    /// Gets an entry by date for the current user.
-    /// </summary>
+    
+    // Gets an entry by date for the current user.
+    
     public async Task<JournalEntry?> GetEntryByDateAsync(DateTime date)
     {
         if (_authService.CurrentUser == null)
@@ -269,9 +271,9 @@ public class JournalService
         return entries.FirstOrDefault();
     }
 
-    /// <summary>
-    /// Gets all entries for the current user.
-    /// </summary>
+    
+    // Gets all entries for the current user.
+    
     public async Task<IEnumerable<JournalEntry>> GetAllEntriesAsync()
     {
         if (_authService.CurrentUser == null)
@@ -280,9 +282,9 @@ public class JournalService
         return await _entryRepository.FindAsync(e => e.UserId == _authService.CurrentUser.Id);
     }
 
-    /// <summary>
-    /// Calculates word count from content.
-    /// </summary>
+    
+    // Calculates word count from content.
+   
     private int CalculateWordCount(string content)
     {
         if (string.IsNullOrWhiteSpace(content))

@@ -1,0 +1,41 @@
+@page "/login"
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Elevation="4" Class="pa-8">
+        <MudText Typo="Typo.h4" Align="Align.Center" GutterBottom="true">Login</MudText>
+        <MudTextField @bind-Value="_username" Label="Username" Variant="Variant.Outlined" Class="mt-4" />
+        <MudTextField @bind-Value="_password" Label="Password" Variant="Variant.Outlined" InputType="InputType.Password" Class="mt-4" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-6" OnClick="ProcessLogin">Login</MudButton>
+        <MudText Align="Align.Center" Class="mt-4">
+            Don't have an account? <MudLink Href="/register">Register</MudLink>
+        </MudText>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _username = "";
+    private string _password = "";
+
+    private async Task ProcessLogin()
+    {
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
+        {
+            Snackbar.Add("Please enter username and password", Severity.Error);
+            return;
+        }
+
+        var result = await AuthService.LoginAsync(_username, _password);
+        if (result.Success)
+        {
+            Snackbar.Add("Login successful!", Severity.Success);
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            Snackbar.Add("Invalid username or password", Severity.Error);
+        }
+    }
+}

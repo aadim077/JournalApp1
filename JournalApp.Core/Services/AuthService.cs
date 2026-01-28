@@ -5,10 +5,10 @@ using System.Text;
 
 namespace JournalApp.Core.Services;
 
-/// <summary>
-/// Service for user authentication and authorization.
-/// Handles user registration, login, and password management.
-/// </summary>
+
+// Service for user authentication and authorization.
+// Handles user registration, login, and password management.
+
 public class AuthService
 {
     private readonly IRepository<User> _userRepository;
@@ -23,9 +23,9 @@ public class AuthService
 
     public User? CurrentUser => _currentUser;
 
-    /// <summary>
-    /// Registers a new user with username and password.
-    /// </summary>
+   
+    //Registers a new user with username and password.
+    
     public async Task<(bool Success, string Message)> RegisterAsync(string username, string password)
     {
         try
@@ -78,9 +78,9 @@ public class AuthService
         }
     }
 
-    /// <summary>
+    
     /// Authenticates a user with username and password.
-    /// </summary>
+    
     public async Task<(bool Success, string Message)> LoginAsync(string username, string password)
     {
         try
@@ -105,17 +105,17 @@ public class AuthService
         }
     }
 
-    /// <summary>
-    /// Logs out the current user.
-    /// </summary>
+    
+    // Logs out the current user.
+    
     public void Logout()
     {
         _currentUser = null;
     }
 
-    /// <summary>
-    /// Generates a random salt for password hashing.
-    /// </summary>
+   
+    // Generates a random salt for password hashing.
+    
     private string GenerateSalt()
     {
         var saltBytes = new byte[32];
@@ -126,9 +126,9 @@ public class AuthService
         return Convert.ToBase64String(saltBytes);
     }
 
-    /// <summary>
-    /// Hashes a password with the given salt using PBKDF2.
-    /// </summary>
+   
+    // Hashes a password with the given salt using PBKDF2.
+    
     private string HashPassword(string password, string salt)
     {
         var saltBytes = Convert.FromBase64String(salt);

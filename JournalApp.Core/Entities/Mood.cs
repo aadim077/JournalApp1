@@ -1,8 +1,8 @@
 namespace JournalApp.Core.Entities;
 
-/// <summary>
-/// Represents mood categories for journal entries.
-/// </summary>
+
+// Represents mood categories for journal entries.
+
 public enum MoodCategory
 {
     Positive,
@@ -10,10 +10,10 @@ public enum MoodCategory
     Negative
 }
 
-/// <summary>
-/// Represents a mood that can be associated with journal entries.
-/// Each entry has one primary mood and up to two secondary moods.
-/// </summary>
+
+// Represents a mood that can be associated with journal entries.
+// Each entry has one primary mood and up to two secondary moods.
+
 public class Mood
 {
     public int Id { get; set; }
