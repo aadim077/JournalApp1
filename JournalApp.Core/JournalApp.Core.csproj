@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="build.log" />
+    <None Remove="build_errors.txt" />
+    <None Remove="simple_build.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="QuestPDF" Version="2025.12.3" />
   </ItemGroup>
 

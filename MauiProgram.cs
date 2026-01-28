@@ -56,8 +56,9 @@ public static class MauiProgram
             using (var scope = app.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<JournalDbContext>();
-                
-                
+                // For development: If you get a "no such column" error, 
+                // you can uncomment the next line to reset the database.
+                dbContext.Database.EnsureDeleted(); 
                 
                
                 

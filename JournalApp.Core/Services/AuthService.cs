@@ -22,6 +22,41 @@ public class AuthService
     }
 
     public User? CurrentUser => _currentUser;
+    public bool IsPinVerified { get; private set; }
+
+    public async Task<(bool Success, string Message)> SetPinAsync(string pin)
+    {
+        if (_currentUser == null) return (false, "Not authenticated.");
+        if (string.IsNullOrWhiteSpace(pin) || pin.Length != 4)
+            return (false, "PIN must be 4 digits.");
+
+        var salt = GenerateSalt();
+        var hash = HashPassword(pin, salt);
+
+        _currentUser.PinHash = hash;
+        _currentUser.PinSalt = salt;
+
+        await _userRepository.UpdateAsync(_currentUser);
+        await _userRepository.SaveChangesAsync();
+
+        IsPinVerified = true;
+        return (true, "PIN set successfully.");
+    }
+
+    public async Task<(bool Success, string Message)> VerifyPinAsync(string pin)
+    {
+        if (_currentUser == null) return (false, "Not authenticated.");
+        if (string.IsNullOrEmpty(_currentUser.PinHash)) return (false, "PIN not set up.");
+
+        var hash = HashPassword(pin, _currentUser.PinSalt!);
+        if (hash == _currentUser.PinHash)
+        {
+            IsPinVerified = true;
+            return (true, "PIN verified.");
+        }
+
+        return (false, "Incorrect PIN.");
+    }
 
    
     //Registers a new user with username and password.
@@ -111,6 +146,7 @@ public class AuthService
     public void Logout()
     {
         _currentUser = null;
+        IsPinVerified = false;
     }
 
    

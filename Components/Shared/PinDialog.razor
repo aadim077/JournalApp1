@@ -1,0 +1,74 @@
+@inject AuthService AuthService
+@inject ISnackbar Snackbar
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Lock" Class="mr-3 mb-n1" />
+            @(IsSetupMode ? "Setup PIN" : "Enter PIN")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Class="mb-4">@(IsSetupMode ? "Choose a 4-digit PIN to secure your journal." : "Please enter your 4-digit PIN.")</MudText>
+        <MudTextField T="string" 
+                      Label="PIN" 
+                      @bind-Value="_pin" 
+                      InputType="InputType.Password" 
+                      MaxLength="4" 
+                      HelperText="4 Digits Only" 
+                      Variant="Variant.Outlined" 
+                      Immediate="true"
+                      OnKeyUp="HandleKeyUp" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" FullWidth="true">
+            @(IsSetupMode ? "Save PIN" : "Unlock")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+    [Parameter] public bool IsSetupMode { get; set; }
+
+    private string _pin = "";
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await Submit();
+    }
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(_pin) || _pin.Length != 4 || !_pin.All(char.IsDigit))
+        {
+            Snackbar.Add("Please enter a 4-digit numerical PIN", Severity.Warning);
+            return;
+        }
+
+        if (IsSetupMode)
+        {
+            var result = await AuthService.SetPinAsync(_pin);
+            if (result.Success)
+            {
+                Snackbar.Add("PIN setup successful!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else Snackbar.Add(result.Message, Severity.Error);
+        }
+        else
+        {
+            var result = await AuthService.VerifyPinAsync(_pin);
+            if (result.Success)
+            {
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                _pin = "";
+                Snackbar.Add("Incorrect PIN", Severity.Error);
+            }
+        }
+    }
+}

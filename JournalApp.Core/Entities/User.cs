@@ -14,6 +14,9 @@ public class User
     
     public string Salt { get; set; } = string.Empty;
     
+    public string? PinHash { get; set; }
+    public string? PinSalt { get; set; }
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     // Navigation properties

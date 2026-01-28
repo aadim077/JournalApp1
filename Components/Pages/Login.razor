@@ -2,6 +2,7 @@
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
     <MudPaper Elevation="4" Class="pa-8">
@@ -30,8 +31,26 @@
         var result = await AuthService.LoginAsync(_username, _password);
         if (result.Success)
         {
-            Snackbar.Add("Login successful!", Severity.Success);
-            NavigationManager.NavigateTo("/");
+            // Standard login successful, now check PIN
+            var user = AuthService.CurrentUser;
+            bool isSetup = string.IsNullOrEmpty(user?.PinHash);
+
+            var parameters = new DialogParameters { ["IsSetupMode"] = isSetup };
+            var options = new DialogOptions { CloseOnEscapeKey = false, BackdropClick = false };
+            
+            var dialog = DialogService.Show<PinDialog>(isSetup ? "Setup Secure PIN" : "Verify PIN", parameters, options);
+            var dialogResult = await dialog.Result;
+
+            if (!dialogResult.Canceled && dialogResult.Data is bool success && success)
+            {
+                Snackbar.Add("Access granted!", Severity.Success);
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                AuthService.Logout(); // PIN failed or canceled, forced logout
+                Snackbar.Add("Security verification failed.", Severity.Error);
+            }
         }
         else
         {
